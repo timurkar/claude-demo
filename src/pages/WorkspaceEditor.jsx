@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useWorkspaces } from '../context/WorkspaceContext'
 import { streamClaude } from '../lib/claude'
+import TableView from '../components/TableView'
 import './WorkspaceEditor.css'
 
 let msgIdCounter = 1000
@@ -9,6 +10,19 @@ function nextId() { return ++msgIdCounter }
 
 function formatTs(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function parseTablesFromHtml(html) {
+  try {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+    const script = doc.getElementById('__ws_tables__')
+    if (!script) return []
+    const data = JSON.parse(script.textContent)
+    return Array.isArray(data) ? data : []
+  } catch {
+    return []
+  }
 }
 
 // ── Chat message ──────────────────────────────────────────────────────────────
@@ -72,7 +86,7 @@ function ResultFrame({ html, streaming }) {
 export default function WorkspaceEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getWorkspace, addMessage, updateMessage, setResult } = useWorkspaces()
+  const { getWorkspace, addMessage, updateMessage, setResult, upsertTable, insertRow, deleteRow, deleteTable } = useWorkspaces()
   const ws = getWorkspace(id)
 
   const [input, setInput] = useState('')
@@ -106,6 +120,8 @@ export default function WorkspaceEditor() {
     )
   }
 
+  const tables = ws.tables || []
+
   async function callClaude(userText) {
     if (sending) return
     setSending(true)
@@ -128,13 +144,22 @@ export default function WorkspaceEditor() {
 
     await streamClaude({
       messages: apiMessages,
+      tables,
       onChunk: (_chunk, full) => {
         setStreamingHtml(full)
       },
       onDone: (full) => {
+        // Parse any tables the AI defined
+        const parsedTables = parseTablesFromHtml(full)
+        parsedTables.forEach((t) => upsertTable(id, t))
+
+        const tableMsg = parsedTables.length > 0
+          ? ` Created ${parsedTables.length} table${parsedTables.length > 1 ? 's' : ''}: ${parsedTables.map((t) => t.name).join(', ')}.`
+          : ''
+
         updateMessage(id, thinkId, {
           role: 'assistant',
-          text: 'Here\'s your workspace. You can ask me to make changes.',
+          text: `Here's your workspace. You can ask me to make changes.${tableMsg}`,
           ts: new Date(),
         })
         setResult(id, full)
@@ -252,19 +277,31 @@ export default function WorkspaceEditor() {
       <div className="wse__preview">
         <div className="wse__preview-bar">
           <div className="wse__preview-tabs">
-            {['Result', 'Code'].map((t) => (
-              <button
-                key={t}
-                className={`wse__preview-tab${activeTab === t ? ' wse__preview-tab--active' : ''}`}
-                onClick={() => setActiveTab(t)}
-              >
-                {t === 'Result' ? '⊡ ' : '‹/› '}{t}
-              </button>
-            ))}
+            <button
+              className={`wse__preview-tab${activeTab === 'Result' ? ' wse__preview-tab--active' : ''}`}
+              onClick={() => setActiveTab('Result')}
+            >
+              ⊡ Result
+            </button>
+            <button
+              className={`wse__preview-tab${activeTab === 'Code' ? ' wse__preview-tab--active' : ''}`}
+              onClick={() => setActiveTab('Code')}
+            >
+              ‹/› Code
+            </button>
+            <button
+              className={`wse__preview-tab${activeTab === 'Tables' ? ' wse__preview-tab--active' : ''}`}
+              onClick={() => setActiveTab('Tables')}
+            >
+              ⊞ Tables
+              {tables.length > 0 && (
+                <span className="wse__tab-badge">{tables.length}</span>
+              )}
+            </button>
             <button className="wse__refresh-btn" title="Reload">↻</button>
           </div>
           <div className="wse__preview-url">
-            🔒 karimbaev.com/{ws.slug}
+            🔒 {window.location.host}/{ws.slug}
           </div>
           <div className="wse__view-modes">
             {[
@@ -298,6 +335,14 @@ export default function WorkspaceEditor() {
             <div className="wse__code-view">
               <pre>{displayHtml || '// No code generated yet'}</pre>
             </div>
+          )}
+          {activeTab === 'Tables' && (
+            <TableView
+              tables={tables}
+              onDeleteTable={(tableId) => deleteTable(id, tableId)}
+              onDeleteRow={(tableId, rowId) => deleteRow(id, tableId, rowId)}
+              onInsertRow={(tableId, row) => insertRow(id, tableId, row)}
+            />
           )}
         </div>
       </div>

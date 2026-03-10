@@ -1,4 +1,4 @@
-const SYSTEM_PROMPT = `You are a workspace page builder. The user describes what they want to build and you generate a complete, self-contained HTML page.
+const SYSTEM_PROMPT = `You are a workspace page builder with database capabilities. The user describes what they want to build and you generate a complete, self-contained HTML page.
 
 Rules:
 - Return ONLY valid HTML — no markdown fences, no explanation, no comments outside the HTML
@@ -8,17 +8,45 @@ Rules:
 - Make it look like a real production app (not a mockup)
 - Support multiple sections if needed (header with title + button, filters/tabs, list or table of items)
 - For lists/tables include 4-6 sample rows
-- Primary accent color: #2563eb (blue) for buttons and active states`
+- Primary accent color: #2563eb (blue) for buttons and active states
+
+Tables / Database:
+- When the user asks to create tables or store structured data, include a <script type="application/json" id="__ws_tables__"> tag at the very end of <body>
+- The script content must be a valid JSON array of table definitions:
+[
+  {
+    "name": "table_name",
+    "columns": [
+      { "name": "column_name", "type": "text|number|boolean|date" }
+    ],
+    "rows": [
+      { "column_name": value }
+    ]
+  }
+]
+- Column types: "text" (strings), "number" (integers or floats), "boolean" (true/false), "date" (ISO date strings like "2024-03-15")
+- Include 3-5 realistic sample rows per table
+- The HTML page should also display the table data visually
+- If the user mentions existing tables (provided in context), reference them in the HTML and include their updated definitions in __ws_tables__`
 
 /**
  * Stream a Claude response. Calls onChunk(text) for each streamed token,
  * onDone(fullText) when complete, onError(err) on failure.
+ * Pass tables[] to inject existing workspace table context into the system prompt.
  */
-export async function streamClaude({ messages, onChunk, onDone, onError }) {
+export async function streamClaude({ messages, tables = [], onChunk, onDone, onError }) {
   // Convert workspace messages to Anthropic format (only user/assistant roles)
   const apiMessages = messages
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .map((m) => ({ role: m.role, content: m.text }))
+
+  let system = SYSTEM_PROMPT
+  if (tables.length > 0) {
+    system += '\n\nExisting tables in this workspace:\n' + JSON.stringify(
+      tables.map((t) => ({ name: t.name, columns: t.columns, rowCount: t.rows.length })),
+      null, 2
+    )
+  }
 
   let response
   try {
@@ -29,7 +57,7 @@ export async function streamClaude({ messages, onChunk, onDone, onError }) {
         model: 'claude-sonnet-4-6',
         max_tokens: 8000,
         stream: true,
-        system: SYSTEM_PROMPT,
+        system,
         messages: apiMessages,
       }),
     })
