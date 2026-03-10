@@ -12,6 +12,26 @@ function formatTs(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+function injectDbScript(html, tables) {
+  if (!tables || tables.length === 0) return html
+  const tag = 'script'
+  const code = [
+    '(function() {',
+    '  var __tables__ = ' + JSON.stringify(tables) + ';',
+    '  window.db = {',
+    '    tables: __tables__,',
+    '    getTable: function(name) { return __tables__.find(function(t) { return t.name === name; }) || null; },',
+    '    all: function(name) { var t = this.getTable(name); return t ? t.rows : []; },',
+    '    find: function(name, fn) { return this.all(name).filter(fn); },',
+    '    count: function(name) { return this.all(name).length; }',
+    '  };',
+    '})();',
+  ].join('\n')
+  const script = `<${tag}>${code}</${tag}>`
+  if (html.includes('</head>')) return html.replace('</head>', script + '</head>')
+  return script + html
+}
+
 function parseTablesFromHtml(html) {
   try {
     const parser = new DOMParser()
@@ -193,7 +213,8 @@ export default function WorkspaceEditor() {
     }
   }
 
-  const displayHtml = sending ? streamingHtml : (ws.result || '')
+  const rawHtml = sending ? streamingHtml : (ws.result || '')
+  const displayHtml = !sending && ws.result ? injectDbScript(rawHtml, tables) : rawHtml
 
   return (
     <div className="wse">

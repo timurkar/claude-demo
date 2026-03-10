@@ -9,7 +9,8 @@
       "Bash(rmdir dashboard)",
       "Bash(npm install)",
       "Bash(npm install react-router-dom)",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npx esbuild src/pages/WorkspaceEditor.jsx --bundle=false)"
     ]
   }
 }

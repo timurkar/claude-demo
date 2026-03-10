@@ -11,8 +11,13 @@ Rules:
 - Primary accent color: #2563eb (blue) for buttons and active states
 
 Tables / Database:
-- When the user asks to create tables or store structured data, include a <script type="application/json" id="__ws_tables__"> tag at the very end of <body>
-- The script content must be a valid JSON array of table definitions:
+- The generated HTML page always has access to a global 'db' object with live workspace table data:
+  - db.all('table_name') — returns all rows as an array of objects
+  - db.find('table_name', fn) — returns filtered rows, e.g. db.find('products', r => r.price > 100)
+  - db.getTable('table_name') — returns { name, columns, rows }
+  - db.count('table_name') — returns row count
+- When existing tables are available in context, ALWAYS use db.all(...) inside a <script> block to render real data dynamically instead of hardcoding rows
+- When creating new tables, include a <script type="application/json" id="__ws_tables__"> tag at the very end of <body>:
 [
   {
     "name": "table_name",
@@ -25,9 +30,8 @@ Tables / Database:
   }
 ]
 - Column types: "text" (strings), "number" (integers or floats), "boolean" (true/false), "date" (ISO date strings like "2024-03-15")
-- Include 3-5 realistic sample rows per table
-- The HTML page should also display the table data visually
-- If the user mentions existing tables (provided in context), reference them in the HTML and include their updated definitions in __ws_tables__`
+- Include 3-5 realistic sample rows per new table
+- When rendering table data, use a <script> block that calls db.all() and builds DOM dynamically so it always reflects current workspace data`
 
 /**
  * Stream a Claude response. Calls onChunk(text) for each streamed token,
