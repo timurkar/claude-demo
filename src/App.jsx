@@ -4,6 +4,7 @@ import LeftMenu from './components/LeftMenu'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import WorkspaceEditor from './pages/WorkspaceEditor'
+import WorkspacePreview from './pages/WorkspacePreview'
 import './App.css'
 
 function Placeholder({ title }) {
@@ -18,23 +19,28 @@ function Placeholder({ title }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <WorkspaceProvider>
-        <div className="app-layout">
-          <LeftMenu />
-          <main className="app-main">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/workspace/:id" element={<WorkspaceEditor />} />
-              <Route path="/contacts" element={<Placeholder title="Contacts" />} />
-              <Route path="/agents" element={<Placeholder title="Agents" />} />
-              <Route path="/transports" element={<Placeholder title="Transports" />} />
-              <Route path="/payments" element={<Placeholder title="Payments" />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-        </div>
-      </WorkspaceProvider>
+      <Routes>
+        <Route path="/preview/:id" element={<WorkspacePreview />} />
+        <Route path="/*" element={
+          <WorkspaceProvider>
+            <div className="app-layout">
+              <LeftMenu />
+              <main className="app-main">
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/workspace/:id" element={<WorkspaceEditor />} />
+                  <Route path="/contacts" element={<Placeholder title="Contacts" />} />
+                  <Route path="/agents" element={<Placeholder title="Agents" />} />
+                  <Route path="/transports" element={<Placeholder title="Transports" />} />
+                  <Route path="/payments" element={<Placeholder title="Payments" />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </main>
+            </div>
+          </WorkspaceProvider>
+        } />
+      </Routes>
     </BrowserRouter>
   )
 }

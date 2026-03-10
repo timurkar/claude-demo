@@ -10,7 +10,9 @@
       "Bash(npm install)",
       "Bash(npm install react-router-dom)",
       "mcp__Claude_Preview__preview_start",
-      "Bash(npx esbuild src/pages/WorkspaceEditor.jsx --bundle=false)"
+      "Bash(npx esbuild src/pages/WorkspaceEditor.jsx --bundle=false)",
+      "Bash(npx esbuild src/lib/claude.js --bundle=false)",
+      "Bash(npx vite build)"
     ]
   }
 }

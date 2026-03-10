@@ -324,6 +324,17 @@ export default function WorkspaceEditor() {
           <div className="wse__preview-url">
             🔒 {window.location.host}/{ws.slug}
           </div>
+          {ws.result && (
+            <button
+              className="wse__icon-btn"
+              title="Open preview in new tab"
+              onClick={() => window.open(`/preview/${id}`, '_blank')}
+            >
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M11 3h6v6M17 3l-8 8M9 5H4a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1v-5"/>
+              </svg>
+            </button>
+          )}
           <div className="wse__view-modes">
             {[
               { mode: 'desktop', icon: '🖥' },
