@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import logo from '../assets/logo.svg'
 import './Login.css'
 
 export default function Login() {
@@ -107,7 +108,7 @@ export default function Login() {
     <div className="login">
       <div className="login__card">
         <div className="login__logo">
-          <div className="login__logo-icon">P</div>
+          <img src={logo} alt="Chatium AI" className="login__logo-icon" />
           <span className="login__logo-label">PLATFORM</span>
         </div>
 

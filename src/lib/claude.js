@@ -11,27 +11,39 @@ Rules:
 - Primary accent color: #2563eb (blue) for buttons and active states
 
 Tables / Database:
-- The generated HTML page always has access to a global 'db' object with live workspace table data:
-  - db.all('table_name') — returns all rows as an array of objects
-  - db.find('table_name', fn) — returns filtered rows, e.g. db.find('products', r => r.price > 100)
-  - db.getTable('table_name') — returns { name, columns, rows }
-  - db.count('table_name') — returns row count
-- When existing tables are available in context, ALWAYS use db.all(...) inside a <script> block to render real data dynamically instead of hardcoding rows
-- When creating new tables, include a <script type="application/json" id="__ws_tables__"> tag at the very end of <body>:
-[
-  {
-    "name": "table_name",
-    "columns": [
-      { "name": "column_name", "type": "text|number|boolean|date" }
-    ],
-    "rows": [
-      { "column_name": value }
-    ]
-  }
-]
-- Column types: "text" (strings), "number" (integers or floats), "boolean" (true/false), "date" (ISO date strings like "2024-03-15")
-- Include 3-5 realistic sample rows per new table
-- When rendering table data, use a <script> block that calls db.all() and builds DOM dynamically so it always reflects current workspace data`
+The page always has a global 'db' object injected before any scripts run. Use it for ALL data rendering.
+
+API:
+  db.all('name')         — all rows as array of objects
+  db.find('name', fn)    — filtered rows
+  db.count('name')       — row count
+  db.getTable('name')    — { name, columns, rows }
+
+CRITICAL RULES — read carefully:
+1. NEVER hardcode row data as HTML. ALWAYS use db.all() in a <script> block to build rows dynamically.
+2. This applies even when YOU are creating the table in the same response — db.all() will work because the data is injected before your script runs.
+3. Use document.getElementById / innerHTML or DOM methods to render the rows.
+
+Example of correct pattern when creating + rendering a table:
+
+<body>
+  <div id="rows"></div>
+  <script>
+    var rows = db.all('products');
+    var html = rows.map(function(r) {
+      return '<tr><td>' + r.id + '</td><td>' + r.name + '</td><td>$' + r.price + '</td></tr>';
+    }).join('');
+    document.getElementById('rows').innerHTML = '<table>' + html + '</table>';
+  </script>
+  <script type="application/json" id="__ws_tables__">
+  [{"name":"products","columns":[{"name":"id","type":"number"},{"name":"name","type":"text"},{"name":"price","type":"number"}],"rows":[{"id":1,"name":"Widget","price":29},{"id":2,"name":"Gadget","price":49}]}]
+  </script>
+</body>
+
+When defining tables via __ws_tables__:
+- Place the <script type="application/json" id="__ws_tables__"> tag at the very END of <body>, after all other scripts
+- Column types: "text", "number", "boolean", "date" (ISO strings like "2024-03-15")
+- Include 3-5 realistic sample rows`
 
 /**
  * Stream a Claude response. Calls onChunk(text) for each streamed token,

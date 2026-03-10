@@ -14,40 +14,45 @@ function signToken(email, otp, expiry) {
 }
 
 async function sendEmail(to, otp) {
-  const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.EMAIL_FROM || 'noreply@yourdomain.com'
+  const apiKey = process.env.MAILGUN_API_KEY
+  const domain = process.env.MAILGUN_DOMAIN
+  const from = process.env.EMAIL_FROM || `mailgun@${domain}`
 
-  if (!apiKey) {
+  if (!apiKey || !domain) {
     // Dev mode: log OTP to console
     console.log(`[DEV] OTP for ${to}: ${otp}`)
     return
   }
 
-  const res = await fetch('https://api.resend.com/emails', {
+  const html = `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:420px;margin:0 auto;padding:40px 24px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#e05c5c;margin-bottom:24px">PLATFORM</div>
+      <h1 style="font-size:24px;font-weight:600;color:#1a1a2e;margin:0 0 8px">Your login code</h1>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 32px">Use the code below to sign in. It expires in 10 minutes.</p>
+      <div style="background:#f5f6fa;border-radius:12px;padding:24px;text-align:center;letter-spacing:8px;font-size:32px;font-weight:700;color:#1a1a2e;margin-bottom:32px">${otp}</div>
+      <p style="color:#9ca3af;font-size:13px;margin:0">If you didn't request this, you can safely ignore this email.</p>
+    </div>
+  `
+
+  const body = new URLSearchParams({ from, to, subject: 'Your login code', html })
+  const credentials = Buffer.from(`api:${apiKey}`).toString('base64')
+
+  const res = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      Authorization: `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: JSON.stringify({
-      from,
-      to,
-      subject: 'Your login code',
-      html: `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:420px;margin:0 auto;padding:40px 24px">
-          <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#e05c5c;margin-bottom:24px">PLATFORM</div>
-          <h1 style="font-size:24px;font-weight:600;color:#1a1a2e;margin:0 0 8px">Your login code</h1>
-          <p style="color:#6b7280;font-size:15px;margin:0 0 32px">Use the code below to sign in. It expires in 10 minutes.</p>
-          <div style="background:#f5f6fa;border-radius:12px;padding:24px;text-align:center;letter-spacing:8px;font-size:32px;font-weight:700;color:#1a1a2e;margin-bottom:32px">${otp}</div>
-          <p style="color:#9ca3af;font-size:13px;margin:0">If you didn't request this, you can safely ignore this email.</p>
-        </div>
-      `,
-    }),
+    body: body.toString(),
   })
 
   if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Email send failed: ${body}`)
+    let message = 'Failed to send email'
+    try {
+      const data = await res.json()
+      message = data.message || message
+    } catch {}
+    throw new Error(message)
   }
 }
 
@@ -70,7 +75,7 @@ export default async function handler(req, res) {
     await sendEmail(email, otp)
   } catch (err) {
     console.error('sendEmail error:', err)
-    return res.status(502).json({ error: 'Failed to send email' })
+    return res.status(502).json({ error: err.message || 'Failed to send email' })
   }
 
   return res.status(200).json({ token })

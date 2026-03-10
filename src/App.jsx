@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { WorkspaceProvider } from './context/WorkspaceContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import LeftMenu from './components/LeftMenu'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import WorkspaceEditor from './pages/WorkspaceEditor'
 import WorkspacePreview from './pages/WorkspacePreview'
+import Login from './pages/Login'
 import './App.css'
 
 function Placeholder({ title }) {
@@ -16,31 +18,46 @@ function Placeholder({ title }) {
   )
 }
 
+function LoginRoute() {
+  const { isAuthenticated } = useAuth()
+  if (isAuthenticated) return <Navigate to="/" replace />
+  return <Login />
+}
+
+function ProtectedApp() {
+  const { isAuthenticated } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return (
+    <WorkspaceProvider>
+      <div className="app-layout">
+        <LeftMenu />
+        <main className="app-main">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/workspace/:id" element={<WorkspaceEditor />} />
+            <Route path="/contacts" element={<Placeholder title="Contacts" />} />
+            <Route path="/agents" element={<Placeholder title="Agents" />} />
+            <Route path="/transports" element={<Placeholder title="Transports" />} />
+            <Route path="/payments" element={<Placeholder title="Payments" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </WorkspaceProvider>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/preview/:id" element={<WorkspacePreview />} />
-        <Route path="/*" element={
-          <WorkspaceProvider>
-            <div className="app-layout">
-              <LeftMenu />
-              <main className="app-main">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/workspace/:id" element={<WorkspaceEditor />} />
-                  <Route path="/contacts" element={<Placeholder title="Contacts" />} />
-                  <Route path="/agents" element={<Placeholder title="Agents" />} />
-                  <Route path="/transports" element={<Placeholder title="Transports" />} />
-                  <Route path="/payments" element={<Placeholder title="Payments" />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </main>
-            </div>
-          </WorkspaceProvider>
-        } />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginRoute />} />
+          <Route path="/preview/:id" element={<WorkspacePreview />} />
+          <Route path="/*" element={<ProtectedApp />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import logo from '../assets/logo.svg'
 import './LeftMenu.css'
 
 const menuItems = [
@@ -54,7 +55,7 @@ export default function LeftMenu() {
   return (
     <aside className="left-menu">
       <NavLink to="/" className="left-menu__logo">
-        <div className="left-menu__logo-icon">C</div>
+        <img src={logo} alt="Chatium AI" className="left-menu__logo-icon" />
         <span className="left-menu__logo-label">Chatium AI</span>
       </NavLink>
 

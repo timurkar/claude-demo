@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 225">
+  <!-- Speech bubble body -->
+  <rect x="0" y="0" width="200" height="180" rx="44" ry="44" fill="#E8197E"/>
+  <!-- Tail: two prongs at bottom center -->
+  <path d="M72,178 L62,222 L86,178 Z" fill="#E8197E"/>
+  <path d="M88,178 L100,222 L112,178 Z" fill="#E8197E"/>
+  <!-- White C shape (donut with right-side opening) -->
+  <path d="
+    M152,65
+    A54,54 0 1,0 152,123
+    L138,123
+    A40,40 0 1,1 138,65
+    Z
+  " fill="white"/>
+</svg>

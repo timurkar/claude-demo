@@ -24,7 +24,8 @@ function injectDbScript(html, tables) {
 }
 
 export default function WorkspacePreview() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = params.id || params.slug
 
   useEffect(() => {
     try {
