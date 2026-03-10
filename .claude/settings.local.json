@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create vite@latest . -- --template react --yes)",
+      "Bash(npm create vite@latest . -- --template react)",
+      "Bash(npm create vite@latest dashboard -- --template react)",
+      "Bash(mv dashboard/* .)",
+      "Bash(mv dashboard/.* .)",
+      "Bash(rmdir dashboard)",
+      "Bash(npm install)",
+      "Bash(npm install react-router-dom)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}
